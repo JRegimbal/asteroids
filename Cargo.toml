@@ -1,0 +1,7 @@
+[package]
+name = "asteroids"
+version = "0.1.0"
+authors = ["JRegimbal <juliette.regimbal@gmail.com>"]
+
+[dependencies]
+sfml = "0.14.0"
