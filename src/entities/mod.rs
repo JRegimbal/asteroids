@@ -1,2 +1,2 @@
 pub mod ship;
-//pub mod asteroid;
+pub mod asteroid;

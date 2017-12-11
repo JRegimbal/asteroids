@@ -1,39 +1,79 @@
 extern crate sfml;
 extern crate std;
 
-use sfml::graphics::{Texture, Sprite, Transformable};
+use sfml::graphics::{Texture, Sprite, Transformable, Drawable, RenderStates, RenderTarget};
 use sfml::system::{Vector2f};
 
-const INCREMENT: u32 = 5;
 pub const TEXTURE_LOC: &str = "ship.png";
+const MOVE_INC: f32 = 6.;
+const ROTATE_INC: f32 = 3.;
+const SHOT_LIMIT: u8 = 4;
 
 pub enum Direction {
-    North = 0b00000001,
-    West = 0b00000010,
-    East = 0b00000100,
-    South = 0b00001000,
+   CW,
+   CCW,
 }
 
 pub struct Ship<'a> {
     sprite: Sprite<'a>,
     life: u8,
     shots: u8,
-    orientation: u8,
 }
 
 impl<'a> Ship<'a> {
     pub fn new(texture: &'a Texture) -> Ship<'a> {
         let sprite: Sprite = Sprite::with_texture(texture);
-        let orientation = Direction::North as u8;
-        Ship { sprite: sprite, life: 3, shots: 0, orientation: orientation }
+        Ship { sprite: sprite, life: 3, shots: 0 }
     }
 
-    pub fn move_ship(&mut self, direction: Direction) {
-
+    pub fn move_ship(&mut self) {
+        let theta = self.sprite.rotation()*std::f32::consts::PI/180.;
+        let old_x = self.sprite.position().x;
+        let old_y = self.sprite.position().y;
+        let new_x = old_x + theta.sin()*MOVE_INC;
+        let new_y = old_y - theta.cos()*MOVE_INC;
+        self.sprite.set_position((new_x, new_y));
     }
 
-    pub fn fire(&mut self) {
+    pub fn rotate_ship(&mut self, direction: Direction) {
+        let theta = self.sprite.rotation() + match direction {
+            Direction::CW   => ROTATE_INC,
+            _               => -ROTATE_INC,
+        };
+        self.sprite.set_rotation(theta);
+    }
 
+    pub fn wrap_bounds(&mut self, width: f32, height: f32) {
+        let orig_x = self.sprite.global_bounds().left + self.sprite.global_bounds().width/2.;
+        let orig_y = self.sprite.global_bounds().top - self.sprite.global_bounds().height/2.;
+        let origin = Vector2f::new(orig_x, orig_y);
+        let mut x = self.sprite.position().x;
+        let mut y = self.sprite.position().y;
+        if origin.x <= 0. {
+            x += width;
+        } else if origin.x >= width {
+            x -= width;
+        }
+        if origin.y <= 0. {
+            y += height;
+        } else if origin.y >= height {
+            y -= height;
+        }
+
+        self.sprite.set_position((x,y));
+    }
+
+    pub fn fire(&mut self) -> std::option::Option<Vector2f> {
+        if self.shots < SHOT_LIMIT {
+            self.shots += 1;
+            return Some(self.get_position());
+        } else {
+            return None;
+        }
+    }
+
+    pub fn reclaim_shot(&mut self) {
+        self.shots -= 1;
     }
 
     pub fn take_damage(&mut self) {
@@ -55,8 +95,8 @@ impl<'a> Ship<'a> {
         self.sprite.position()
     }
 
-    pub fn get_orientation(&self) -> u8 {
-        self.orientation
+    pub fn get_orientation(&self) -> f32 {
+        self.sprite.rotation()
     }
 
     pub fn set_orientation(&mut self, angle: f32) {
@@ -67,5 +107,15 @@ impl<'a> Ship<'a> {
         let width = self.sprite.local_bounds().width / 2.;
         let height = self.sprite.local_bounds().height / 2.;
         self.sprite.set_origin((width, height));
+    }
+}
+
+impl<'a> Drawable for Ship<'a> {
+    fn draw<'s: 'shader, 'texture, 'shader, 'shader_texture>(
+        &'s self,
+        render_target: &mut RenderTarget,
+        _: RenderStates<'texture, 'shader, 'shader_texture>,
+        ) {
+        render_target.draw(&self.sprite);
     }
 }
