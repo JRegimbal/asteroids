@@ -1,13 +1,11 @@
-extern crate sfml;
 extern crate std;
 
-use sfml::graphics::{Texture, Sprite, Transformable, Drawable, RenderStates, RenderTarget};
+use sfml::graphics::{Texture, Sprite, Transformable, Drawable, RenderStates, RenderTarget, RectangleShape, Color, Shape, FloatRect};
 use sfml::system::{Vector2f};
 
 pub const TEXTURE_LOC: &str = "ship.png";
 const MOVE_INC: f32 = 6.;
 const ROTATE_INC: f32 = 3.;
-const SHOT_LIMIT: u8 = 4;
 
 pub enum Direction {
    CW,
@@ -17,16 +15,15 @@ pub enum Direction {
 pub struct Ship<'a> {
     sprite: Sprite<'a>,
     life: u8,
-    shots: u8,
 }
 
 impl<'a> Ship<'a> {
     pub fn new(texture: &'a Texture) -> Ship<'a> {
         let sprite: Sprite = Sprite::with_texture(texture);
-        Ship { sprite: sprite, life: 3, shots: 0 }
+        Ship { sprite: sprite, life: 3 }
     }
 
-    pub fn move_ship(&mut self) {
+    pub fn move_ship(&mut self) { 
         let theta = self.sprite.rotation()*std::f32::consts::PI/180.;
         let old_x = self.sprite.position().x;
         let old_y = self.sprite.position().y;
@@ -63,17 +60,8 @@ impl<'a> Ship<'a> {
         self.sprite.set_position((x,y));
     }
 
-    pub fn fire(&mut self) -> std::option::Option<Vector2f> {
-        if self.shots < SHOT_LIMIT {
-            self.shots += 1;
-            return Some(self.get_position());
-        } else {
-            return None;
-        }
-    }
-
-    pub fn reclaim_shot(&mut self) {
-        self.shots -= 1;
+    pub fn fire(&mut self) -> Vector2f {
+        self.sprite.position()
     }
 
     pub fn take_damage(&mut self) {
@@ -82,11 +70,15 @@ impl<'a> Ship<'a> {
         }
     }
 
+    pub fn rect(&self) -> FloatRect {
+        self.sprite.global_bounds()
+    }
+
     pub fn is_alive(&self) -> bool {
         (self.life > 0)
     }
 
-    pub fn get_position(&self) -> Vector2f {
+    pub fn position(&self) -> Vector2f {
         self.sprite.position()
     }
 
@@ -117,5 +109,61 @@ impl<'a> Drawable for Ship<'a> {
         _: RenderStates<'texture, 'shader, 'shader_texture>,
         ) {
         render_target.draw(&self.sprite);
+    }
+}
+
+const BULLET_SIZE: f32 = 2.;
+const BULLET_SPEED: f32 = MOVE_INC * 1.5;
+
+pub struct Bullet<'a> {
+    rect: RectangleShape<'a>,
+    theta: f32,
+}
+
+impl<'a> Bullet<'a> {
+    pub fn new(pos: Vector2f, angle: f32) -> Bullet<'a> {
+        let mut r = RectangleShape::new();
+        r.set_position(pos);
+        r.set_fill_color(&Color::BLACK);
+        r.set_size((BULLET_SIZE, BULLET_SIZE));
+        Bullet { rect: r, theta: angle }
+    }
+
+    pub fn position(&self) -> Vector2f {
+        self.rect.position()
+    }
+
+    pub fn update(&mut self) {
+        let theta = self.theta*std::f32::consts::PI/180.;
+        let old_x = self.rect.position().x;
+        let old_y = self.rect.position().y;
+        let new_x = old_x + theta.sin()*BULLET_SPEED;
+        let new_y = old_y - theta.cos()*BULLET_SPEED;
+        self.rect.set_position((new_x, new_y));
+    }
+
+    pub fn destroy(&mut self) {
+        self.rect.set_position((-100.0, -100.0));
+    }
+
+    pub fn in_bounds(&self, width: f32, height: f32) -> bool {
+        let x = self.rect.position().x;
+        let y = self.rect.position().y;
+
+        if x >= width || x <= 0. || y >= height || y <= 0. {
+            return false;
+        } else {
+            return true;
+        }
+    }
+}
+
+impl<'a> Drawable for Bullet<'a> {
+    fn draw<'s: 'shader, 'texture, 'shader, 'shader_texture>(
+        &'s self,
+        render_target: &mut RenderTarget,
+        _: RenderStates<'texture, 'shader, 'shader_texture>,
+        ) {
+        render_target.draw(&self.rect);
     }
 }
