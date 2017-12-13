@@ -4,10 +4,11 @@ use sfml::graphics::{Texture, Sprite, Transformable, Drawable, RenderTarget, Ren
 use sfml::system::Vector2f;
 use rand::{thread_rng, Rng};
 
+pub const TEXTURE_LOC: &str = "res/asteroid.png";
 const BREAK_NUM: u8 = 4;
 const MOVE_INC: f32 = 3.;
-pub const TEXTURE_LOC: &str = "asteroid.png";
 
+#[derive(Clone)]
 enum AsteroidSize {
     Large,
     Medium,
@@ -44,7 +45,10 @@ impl<'a> Asteroid<'a> {
         }
     }
 
-    fn split(&self) -> Option<std::vec::Vec<Asteroid>> {
+    pub fn split(&self) -> Option<std::vec::Vec<Asteroid<'a>>> {
+        if self.pts > 0 {
+            return None;
+        }
         match self.size {
             AsteroidSize::Small => {return None;}
             _                   => {
@@ -65,8 +69,8 @@ impl<'a> Asteroid<'a> {
                         sprite.set_scale((0.25,0.25));
                     }
                     let a = Asteroid {
-                        sprite: sprite,
-                        size: size,
+                        sprite: sprite.clone(),
+                        size: size.clone(),
                         theta: self.theta + (x*BREAK_NUM) as f32/360.,
                         pts: pts,
                         has_entered: true,
@@ -110,24 +114,20 @@ impl<'a> Asteroid<'a> {
         self.sprite.set_position((-100.0, -100.0));
     }
 
-    pub fn update(&mut self) -> Option<std::vec::Vec<Asteroid>> {
-        if self.pts == 0 { 
-            return self.split()
-        }
-        else {
+    pub fn update(&mut self) {
+        if self.pts > 0 { 
             let theta = self.theta*std::f32::consts::PI/180.;
             let x = self.sprite.position().x + theta.sin()*MOVE_INC;
             let y = self.sprite.position().y - theta.cos()*MOVE_INC;
             self.sprite.set_position((x, y));
             if self.bounded() { self.has_entered = true; }
         }
-        None
     }
 
     fn bounded(&self) -> bool {
         let x = self.sprite.position().x;
         let y = self.sprite.position().y;
-        x >= 0. && x <= self.bounds.x && y >= 0. && y <= self.bounds.y
+        x >= -self.sprite.global_bounds().width && x <= self.bounds.x && y >= -self.sprite.global_bounds().height && y <= self.bounds.y
     }
 }
 
@@ -138,6 +138,20 @@ impl<'a> Drawable for Asteroid<'a> {
         _: RenderStates<'texture, 'shader, 'shader_texture>,
         ) {
         render_target.draw(&self.sprite);
+    }
+}
+
+impl<'a> Clone for Asteroid<'a> {
+    fn clone(&self) -> Asteroid<'a> { 
+        Asteroid {
+            sprite: self.sprite.clone(),
+            size: self.size.clone(),
+            theta: self.theta,
+            pts: self.pts,
+            has_entered: self.has_entered,
+            bounds: self.bounds,
+            speed: self.speed,
+        }
     }
 }
 

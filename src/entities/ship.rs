@@ -3,7 +3,7 @@ extern crate std;
 use sfml::graphics::{Texture, Sprite, Transformable, Drawable, RenderStates, RenderTarget, RectangleShape, Color, Shape, FloatRect};
 use sfml::system::{Vector2f};
 
-pub const TEXTURE_LOC: &str = "ship.png";
+pub const TEXTURE_LOC: &str = "res/ship.png";
 const MOVE_INC: f32 = 6.;
 const ROTATE_INC: f32 = 3.;
 
