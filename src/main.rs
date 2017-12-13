@@ -90,16 +90,14 @@ fn main() {
             bullet_vec.iter_mut().for_each(|b| b.update());
             asteroid_vec.iter_mut().for_each(|a| a.update());
 
-            {
-                let mut temp: Vec<Asteroid> = vec![];
-                let ast_temp = asteroid_vec.clone();
-                for a in ast_temp.into_iter().filter_map(|a| a.split()) {
-                    for i in a.into_iter() {
-                        temp.push(i);
-                    }
+            let mut temp: Vec<Asteroid> = vec![];
+            for a in asteroid_vec.iter().filter_map(|a| a.split()) {
+                for i in a.into_iter() {
+                    temp.push(i);
                 }
-                asteroid_vec.append(&mut temp);
-            } 
+            }
+            asteroid_vec.append(&mut temp);
+            
             asteroid_vec.retain(|a| a.is_alive() && a.in_bounds());
             bullet_vec.retain(|b| b.in_bounds(bounds.x, bounds.y));
             
