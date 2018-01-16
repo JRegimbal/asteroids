@@ -100,6 +100,10 @@ impl<'a> Ship<'a> {
         let height = self.sprite.local_bounds().height / 2.;
         self.sprite.set_origin((width, height));
     }
+
+    pub fn get_lives(&self) -> u8 {
+        self.life
+    }
 }
 
 impl<'a> Drawable for Ship<'a> {

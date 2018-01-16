@@ -4,7 +4,7 @@ extern crate rand;
 pub mod entities;
 
 use sfml::window::{Event, VideoMode, Style, Key};
-use sfml::graphics::{Texture, RenderWindow, RenderTarget, Color};
+use sfml::graphics::{Texture, RenderWindow, RenderTarget, Color, Font, Text, Transformable};
 use sfml::system::Vector2f;
 use entities::ship::{Ship, Bullet, Direction};
 use entities::asteroid::{Asteroid, AsteroidGenerator};
@@ -40,6 +40,12 @@ fn main() {
 
     let mut asteroid_vec: Vec<Asteroid> = vec![];
     let mut bullet_vec: Vec<Bullet> = vec![];
+
+    //set up lives
+    let font: Font = Font::from_file("res/Roboto-Regular.ttf").unwrap();
+    let mut status_text: Text = Text::new("", &font, 15);
+    status_text.set_position((15., 15.));
+    status_text.set_fill_color(&Color::BLACK);
     
     let mut points: u8 = 0;
     while window.is_open() {
@@ -134,6 +140,9 @@ fn main() {
         for a in &asteroid_vec {
             window.draw(a);
         }
+        let temp_string = format!("Lives: {}\nPoints: {}", ship.get_lives(), points);
+        status_text.set_string(&temp_string);
+        window.draw(&status_text);
         window.display();
     }
     println!("Final Score: {}", points);
